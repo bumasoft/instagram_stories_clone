@@ -1,6 +1,6 @@
 <template>
     <div id="stories" :style="storiesCSS">
-        <Story :slides="story" v-for="(story, index) in stories" :key="index" ref="stories" />
+        <Story :slides="story" v-for="(story, index) in stories" :key="index" :index="index" ref="stories" />
     </div>
 </template>
 
@@ -31,6 +31,9 @@
             EventBus.$on('NEXT_STORY', () => {
                 if (store.getters.currentStoryIndex < store.getters.stories.length - 1) {
                     this.$refs.stories[store.getters.currentStoryIndex].deactivate();
+                    this.$refs.stories[store.getters.currentStoryIndex].timeline.seek(0);
+                    this.$refs.stories[store.getters.currentStoryIndex].resetSlide();
+
                     store.commit("setCurrentStoryIndex", store.getters.currentStoryIndex+1);
 
                     this.$refs.stories[store.getters.currentStoryIndex].activate();
@@ -40,6 +43,8 @@
             EventBus.$on('PREVIOUS_STORY', () => {
                 if (store.getters.currentStoryIndex > 0) {
                     this.$refs.stories[store.getters.currentStoryIndex].deactivate();
+                    this.$refs.stories[store.getters.currentStoryIndex].resetSlide();
+
                     store.commit("setCurrentStoryIndex", store.getters.currentStoryIndex-1);
 
                     this.$refs.stories[store.getters.currentStoryIndex].activate();
@@ -60,12 +65,12 @@
 
         },
         computed: {
-          storiesCSS() {
-              return {
-                  'margin-left': (store.getters.currentStoryIndex * this.viewportWidth * -1) + 'px',
-                  'width': this.viewportWidth *  store.getters.stories.length + 'px'
-              };
-          }
+            storiesCSS() {
+                return {
+                    'margin-left': (store.getters.currentStoryIndex * this.viewportWidth * -1) + 'px',
+                    'width': this.viewportWidth *  store.getters.stories.length + 'px'
+                };
+            }
         },
         methods: {
             setViewport() {

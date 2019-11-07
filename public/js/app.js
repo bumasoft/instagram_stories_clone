@@ -3216,11 +3216,17 @@ module.exports = {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var animejs_lib_anime_es_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! animejs/lib/anime.es.js */ "./node_modules/animejs/lib/anime.es.js");
-/* harmony import */ var hammerjs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! hammerjs */ "./node_modules/hammerjs/hammer.js");
-/* harmony import */ var hammerjs__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(hammerjs__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _store__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../store */ "./resources/js/store.js");
-/* harmony import */ var _eventbus__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../eventbus */ "./resources/js/eventbus.js");
+/* harmony import */ var lodash_debounce__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! lodash/debounce */ "./node_modules/lodash/debounce.js");
+/* harmony import */ var lodash_debounce__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(lodash_debounce__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var animejs_lib_anime_es_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! animejs/lib/anime.es.js */ "./node_modules/animejs/lib/anime.es.js");
+/* harmony import */ var hammerjs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! hammerjs */ "./node_modules/hammerjs/hammer.js");
+/* harmony import */ var hammerjs__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(hammerjs__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _store__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../store */ "./resources/js/store.js");
+/* harmony import */ var _eventbus__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../eventbus */ "./resources/js/eventbus.js");
+//
+//
+//
+//
 //
 //
 //
@@ -3248,23 +3254,27 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-var SLIDE_DURATION = 2500;
+
+var SLIDE_DURATION = 5000;
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'Story',
   props: {
-    slides: Array
+    slides: Array,
+    index: Number
   },
   data: function data() {
-    var timeline = animejs_lib_anime_es_js__WEBPACK_IMPORTED_MODULE_0__["default"].timeline({
+    var timeline = animejs_lib_anime_es_js__WEBPACK_IMPORTED_MODULE_1__["default"].timeline({
       autoplay: false,
       duration: SLIDE_DURATION,
-      easing: 'linear'
+      easing: 'linear',
+      videoCheckerTimer: null,
+      currentVideo: null
     });
     return {
       currentSlideIndex: 0,
       isActive: false,
       timeline: timeline,
-      store: _store__WEBPACK_IMPORTED_MODULE_2__["store"],
+      store: _store__WEBPACK_IMPORTED_MODULE_3__["store"],
       progress: []
     };
   },
@@ -3274,7 +3284,7 @@ var SLIDE_DURATION = 2500;
         backgroundColor: this.slides[this.currentSlideIndex].backgroundColor,
         backgroundImage: this.storyDataSrc,
         backgroundSize: 'cover',
-        width: 100 / _store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.stories.length + '%'
+        width: 100 / _store__WEBPACK_IMPORTED_MODULE_3__["store"].getters.stories.length + '%'
       };
     },
     storyDataSrc: function storyDataSrc() {
@@ -3282,7 +3292,7 @@ var SLIDE_DURATION = 2500;
       return bgImage;
     },
     videoCSS: function videoCSS() {
-      if (!this.slides[this.currentSlideIndex].backgroundVideo) {
+      if (!this.slides[this.currentSlideIndex].backgroundVideo || _store__WEBPACK_IMPORTED_MODULE_3__["store"].getters.currentStoryIndex != this.index) {
         return {
           display: 'none'
         };
@@ -3290,12 +3300,17 @@ var SLIDE_DURATION = 2500;
         return {
           display: 'block',
           position: 'absolute',
-          top: '0',
-          left: '0'
+          top: '50%',
+          left: '50%',
+          '-webkit-transform': 'translateX(-50%) translateY(-50%)',
+          transform: 'translateX(-50%) translateY(-50%)',
+          minWidth: this.viewportWidth + 'px',
+          minHeight: '100%'
         };
       }
     },
     videoSRC: function videoSRC() {
+      if (_store__WEBPACK_IMPORTED_MODULE_3__["store"].getters.currentStoryIndex != this.index) return '';
       var bgVideo = this.slides[this.currentSlideIndex].backgroundVideo ? "userfiles/".concat(this.slides[this.currentSlideIndex].backgroundVideo) : '';
       return bgVideo;
     }
@@ -3307,12 +3322,21 @@ var SLIDE_DURATION = 2500;
     },
     deactivate: function deactivate() {
       this.timeline.pause();
+
+      if (this.currentVideo) {
+        this.currentVideo.pause();
+      }
     },
     resetSlide: function resetSlide() {
       // Jump to beginning of the slide
       this.timeline.pause();
       this.timeline.seek(this.currentSlideIndex * SLIDE_DURATION);
       this.timeline.play();
+
+      if (this.currentVideo) {
+        this.currentVideo.currentTime = 0;
+        this.currentVideo.play();
+      }
     },
     nextSlide: function nextSlide() {
       if (this.currentSlideIndex < this.slides.length - 1) {
@@ -3331,10 +3355,10 @@ var SLIDE_DURATION = 2500;
       }
     },
     nextStory: function nextStory() {
-      _eventbus__WEBPACK_IMPORTED_MODULE_3__["EventBus"].$emit('NEXT_STORY');
+      _eventbus__WEBPACK_IMPORTED_MODULE_4__["EventBus"].$emit('NEXT_STORY');
     },
     previousStory: function previousStory() {
-      _eventbus__WEBPACK_IMPORTED_MODULE_3__["EventBus"].$emit('PREVIOUS_STORY');
+      _eventbus__WEBPACK_IMPORTED_MODULE_4__["EventBus"].$emit('PREVIOUS_STORY');
     }
   },
   mounted: function mounted() {
@@ -3342,10 +3366,11 @@ var SLIDE_DURATION = 2500;
 
     var $timeline = this.$el.getElementsByClassName('timeline')[0]; // Add progress bars to the timeline animation group
 
-    this.slides.forEach(function (color, index) {
+    this.slides.forEach(function (item, index) {
       _this.timeline.add({
         targets: $timeline.getElementsByClassName('slice')[index].getElementsByClassName('progress'),
         width: '100%',
+        duration: item.duration ? item.duration : SLIDE_DURATION,
         changeBegin: function changeBegin() {
           // Update the Vue component state when progress bar begins to play
           _this.currentSlideIndex = index;
@@ -3358,23 +3383,31 @@ var SLIDE_DURATION = 2500;
         }
       });
     });
-    this.hammer = new hammerjs__WEBPACK_IMPORTED_MODULE_1___default.a.Manager(this.$el, {
-      recognizers: [[hammerjs__WEBPACK_IMPORTED_MODULE_1___default.a.Pan, {
-        direction: hammerjs__WEBPACK_IMPORTED_MODULE_1___default.a.DIRECTION_HORIZONTAL
-      }], [hammerjs__WEBPACK_IMPORTED_MODULE_1___default.a.Tap], [hammerjs__WEBPACK_IMPORTED_MODULE_1___default.a.Press, {
+    this.hammer = new hammerjs__WEBPACK_IMPORTED_MODULE_2___default.a.Manager(this.$el, {
+      recognizers: [[hammerjs__WEBPACK_IMPORTED_MODULE_2___default.a.Pan, {
+        direction: hammerjs__WEBPACK_IMPORTED_MODULE_2___default.a.DIRECTION_HORIZONTAL
+      }], [hammerjs__WEBPACK_IMPORTED_MODULE_2___default.a.Tap], [hammerjs__WEBPACK_IMPORTED_MODULE_2___default.a.Press, {
         time: 1,
         threshold: 1000000
       }]]
     });
     this.hammer.on("press", function () {
       _this.timeline.pause();
+
+      if (_this.currentVideo) {
+        _this.currentVideo.pause();
+      }
     });
     this.hammer.on("pressup tap", function () {
       _this.timeline.play();
+
+      if (_this.currentVideo) {
+        _this.currentVideo.play();
+      }
     }); // Tap on the side to navigate between slides
 
     this.hammer.on("tap", function (event) {
-      if (event.center.x > window.innerWidth / 3) {
+      if (event.center.x > window.innerWidth / 2) {
         _this.nextSlide();
       } else {
         _this.previousSlide();
@@ -3390,6 +3423,31 @@ var SLIDE_DURATION = 2500;
         }
       }
     });
+  },
+  watch: {
+    currentSlideIndex: function currentSlideIndex(index) {
+      var _this2 = this;
+
+      clearInterval(this.videoCheckerTimer);
+
+      if (this.slides[index].backgroundVideo) {
+        this.timeline.pause();
+        var $vid = this.$el.getElementsByTagName('video')[0];
+        $vid.volume = 1;
+        $vid.muted = false;
+        this.videoCheckerTimer = setInterval(function () {
+          var duration = $vid.duration * 1000;
+          console.log(duration);
+
+          if (!isNaN(duration)) {
+            clearInterval(_this2.videoCheckerTimer);
+            _this2.currentVideo = $vid;
+
+            _this2.timeline.play();
+          }
+        }, 10);
+      }
+    }
   }
 });
 
@@ -3532,6 +3590,10 @@ __webpack_require__.r(__webpack_exports__);
       if (_store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.currentStoryIndex < _store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.stories.length - 1) {
         _this.$refs.stories[_store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.currentStoryIndex].deactivate();
 
+        _this.$refs.stories[_store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.currentStoryIndex].timeline.seek(0);
+
+        _this.$refs.stories[_store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.currentStoryIndex].resetSlide();
+
         _store__WEBPACK_IMPORTED_MODULE_2__["store"].commit("setCurrentStoryIndex", _store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.currentStoryIndex + 1);
 
         _this.$refs.stories[_store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.currentStoryIndex].activate();
@@ -3540,6 +3602,8 @@ __webpack_require__.r(__webpack_exports__);
     _eventbus__WEBPACK_IMPORTED_MODULE_3__["EventBus"].$on('PREVIOUS_STORY', function () {
       if (_store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.currentStoryIndex > 0) {
         _this.$refs.stories[_store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.currentStoryIndex].deactivate();
+
+        _this.$refs.stories[_store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.currentStoryIndex].resetSlide();
 
         _store__WEBPACK_IMPORTED_MODULE_2__["store"].commit("setCurrentStoryIndex", _store__WEBPACK_IMPORTED_MODULE_2__["store"].getters.currentStoryIndex - 1);
 
@@ -5417,7 +5481,7 @@ exports = module.exports = __webpack_require__(/*! ../../../node_modules/css-loa
 
 
 // module
-exports.push([module.i, "\n.story[data-v-3849ef1a] {\n    float: left;\n    position: relative;\n    height: 100%;\n    z-index: 1;\n    display: -webkit-box;\n    display: flex;\n    -webkit-box-orient: vertical;\n    -webkit-box-direction: normal;\n            flex-direction: column;\n}\n.timeline[data-v-3849ef1a] {\n    z-index: 10000;\n    display: -webkit-box;\n    display: flex;\n    -webkit-box-flex: 0;\n            flex-grow: 0;\n    width: 100%;\n}\n.timeline > .slice[data-v-3849ef1a] {\n    background: rgba(0,0,0,0.25);\n    height: 10px;\n    margin: 10px;\n    width: 100%;\n}\n.timeline > .slice > .progress[data-v-3849ef1a] {\n    background: black;\n    height: 10px;\n    width: 0%;\n}\n.slide[data-v-3849ef1a] {\n    z-index: 9000;\n    /* Take the rest of the page */\n    -webkit-box-flex: 1;\n            flex-grow: 1;\n    padding: 10px;\n}\n.slide p[data-v-3849ef1a] {\n    font-size: 14pt;\n    font-weight: bold;\n    color: black;\n}\n.slide p > small[data-v-3849ef1a] {\n    display: block;\n    font-weight: normal;\n}\n", ""]);
+exports.push([module.i, "\n.story[data-v-3849ef1a] {\n    float: left;\n    position: relative;\n    height: 100%;\n    z-index: 1;\n    display: -webkit-box;\n    display: flex;\n    -webkit-box-orient: vertical;\n    -webkit-box-direction: normal;\n            flex-direction: column;\n}\n.timeline[data-v-3849ef1a] {\n    z-index: 10000;\n    display: -webkit-box;\n    display: flex;\n    padding: 10px;\n    -webkit-box-flex: 0;\n            flex-grow: 0;\n    width: 100%;\n}\n.timeline > .slice[data-v-3849ef1a] {\n    background: #a0a0a0;\n    height: 3px;\n    margin: 0px 1px;\n    width: 100%;\n}\n.timeline > .slice > .progress[data-v-3849ef1a] {\n    background: #f0f0f0;\n    height: 3px;\n    width: 0%;\n}\n.slide[data-v-3849ef1a] {\n    z-index: 9000;\n    /* Take the rest of the page */\n    -webkit-box-flex: 1;\n            flex-grow: 1;\n    padding: 0 11px;\n}\n.slide p[data-v-3849ef1a] {\n    font-size: 11pt;\n    font-weight: 700;\n    font-family: 'Lato';\n    color: #fff;\n}\n.slide p > small[data-v-3849ef1a] {\n    color: #f0f0f0;\n    margin-left: 8px;\n    font-size: 12pt;\n    font-weight: 400;\n}\n", ""]);
 
 // exports
 
@@ -29095,35 +29159,55 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c(
-    "div",
-    { staticClass: "story", style: _vm.storyCSS },
-    [
-      _c("Canvas-video", {
-        style: _vm.videoCSS,
-        attrs: { src: _vm.videoSRC, autoplay: true, loop: true, cover: true }
-      }),
-      _vm._v(" "),
-      _c(
-        "div",
-        { staticClass: "timeline" },
-        _vm._l(_vm.slides, function(slide, i) {
-          return _c("div", { key: i, staticClass: "slice" }, [
-            _c("div", { staticClass: "progress" }, [_vm._v(" ")])
-          ])
-        }),
-        0
-      ),
-      _vm._v(" "),
-      _c("div", { staticClass: "slide" }, [
-        _c("p", [
-          _vm._v(_vm._s(_vm.slides[_vm.currentSlideIndex].title) + " "),
-          _c("small", [_vm._v("8mins ago")])
+  return _c("div", { staticClass: "story", style: _vm.storyCSS }, [
+    _c("video", {
+      style: _vm.videoCSS,
+      attrs: { autoplay: "", muted: "", src: _vm.videoSRC, type: "video/mp4" },
+      domProps: { muted: true }
+    }),
+    _vm._v(" "),
+    _c(
+      "div",
+      { staticClass: "timeline" },
+      _vm._l(_vm.slides, function(slide, i) {
+        return _c("div", { key: i, staticClass: "slice" }, [
+          _c("div", { staticClass: "progress" }, [_vm._v(" ")])
         ])
-      ])
-    ],
-    1
-  )
+      }),
+      0
+    ),
+    _vm._v(" "),
+    _c("div", { staticClass: "slide" }, [
+      _c(
+        "p",
+        [
+          _c(
+            "v-avatar",
+            {
+              staticStyle: { "margin-right": "8px" },
+              attrs: { color: "black", size: 32 }
+            },
+            [
+              _c("img", {
+                attrs: {
+                  src:
+                    "https://www.upwork.com/profile-portraits/c1omt9esKVIOHWANuPag7klcM6exnA2ouBIQ--8cs_GvpQ3zi_dNRTGGShy1qwpEYE",
+                  alt: "John"
+                }
+              })
+            ]
+          ),
+          _vm._v(
+            "\n\n            " +
+              _vm._s(_vm.slides[_vm.currentSlideIndex].title) +
+              " "
+          ),
+          _c("small", [_vm._v("9h")])
+        ],
+        1
+      )
+    ])
+  ])
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -29164,7 +29248,7 @@ var render = function() {
                 [
                   _c(
                     "v-col",
-                    { attrs: { cols: "12", sm: "12", md: "4" } },
+                    { attrs: { cols: "12", sm: "12", md: "3" } },
                     [
                       _c(
                         "v-card",
@@ -29357,7 +29441,7 @@ var render = function() {
         key: index,
         ref: "stories",
         refInFor: true,
-        attrs: { slides: story }
+        attrs: { slides: story, index: index }
       })
     }),
     1
@@ -82525,6 +82609,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Story_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Story.vue?vue&type=script&lang=js& */ "./resources/js/components/Story.vue?vue&type=script&lang=js&");
 /* empty/unused harmony star reexport *//* harmony import */ var _Story_vue_vue_type_style_index_0_id_3849ef1a_scoped_true_lang_css___WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Story.vue?vue&type=style&index=0&id=3849ef1a&scoped=true&lang=css& */ "./resources/js/components/Story.vue?vue&type=style&index=0&id=3849ef1a&scoped=true&lang=css&");
 /* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ "./node_modules/vue-loader/lib/runtime/componentNormalizer.js");
+/* harmony import */ var _node_modules_vuetify_loader_lib_runtime_installComponents_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../node_modules/vuetify-loader/lib/runtime/installComponents.js */ "./node_modules/vuetify-loader/lib/runtime/installComponents.js");
+/* harmony import */ var _node_modules_vuetify_loader_lib_runtime_installComponents_js__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_node_modules_vuetify_loader_lib_runtime_installComponents_js__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var vuetify_lib_components_VAvatar__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! vuetify/lib/components/VAvatar */ "./node_modules/vuetify/lib/components/VAvatar/index.js");
 
 
 
@@ -82543,6 +82630,12 @@ var component = Object(_node_modules_vue_loader_lib_runtime_componentNormalizer_
   null
   
 )
+
+/* vuetify-loader */
+
+
+_node_modules_vuetify_loader_lib_runtime_installComponents_js__WEBPACK_IMPORTED_MODULE_4___default()(component, {VAvatar: vuetify_lib_components_VAvatar__WEBPACK_IMPORTED_MODULE_5__["VAvatar"]})
+
 
 /* hot reload */
 if (false) { var api; }
@@ -82742,25 +82835,21 @@ var store = new vuex__WEBPACK_IMPORTED_MODULE_1__["default"].Store({
   state: {
     currentStoryIndex: 0,
     stories: [[{
-      backgroundColor: "#D53738",
       backgroundImage: 'img1.jpg',
-      title: 'bla bla'
+      title: 'codesm'
     }, {
-      backgroundColor: "#638867",
       backgroundImage: 'img2.jpg',
-      title: 'bla bla2'
+      title: 'codesm'
     }], [{
-      backgroundColor: "#DAF7A6",
       backgroundImage: 'img3.jpg',
-      title: 'bla bla3'
+      title: 'marianbusoi'
     }, {
-      backgroundColor: "#FFC300",
       backgroundImage: 'img4.jpg',
-      title: 'bla bla4'
+      title: 'marianbusoi'
     }, {
-      backgroundColor: "#FF5733",
       backgroundVideo: 'vid.mp4',
-      title: 'bla bla5'
+      title: 'marianbusoi',
+      duration: 41700
     }]]
   },
   mutations: {

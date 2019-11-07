@@ -9,7 +9,7 @@
                     align="center"
                     justify="center"
                 >
-                    <v-col cols="12" sm="12" md="4">
+                    <v-col cols="12" sm="12" md="3">
                         <v-card>
                             <v-toolbar dense>
                                 <v-app-bar-nav-icon id="app-menu" @click="menuShown = !menuShown"></v-app-bar-nav-icon>

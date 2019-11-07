@@ -10,31 +10,27 @@ export const store = new Vuex.Store({
         stories: [
             [
                 {
-                backgroundColor: "#D53738",
                 backgroundImage: 'img1.jpg',
-                title: 'bla bla'
+                title: 'codesm'
                 },
                 {
-                    backgroundColor: "#638867",
                     backgroundImage: 'img2.jpg',
-                    title: 'bla bla2'
+                    title: 'codesm'
                 },
             ],
             [
                 {
-                    backgroundColor: "#DAF7A6",
                     backgroundImage: 'img3.jpg',
-                    title: 'bla bla3'
+                    title: 'marianbusoi'
                 },
                 {
-                    backgroundColor: "#FFC300",
                     backgroundImage: 'img4.jpg',
-                    title: 'bla bla4'
+                    title: 'marianbusoi'
                 },
                 {
-                    backgroundColor: "#FF5733",
                     backgroundVideo: 'vid.mp4',
-                    title: 'bla bla5'
+                    title: 'marianbusoi',
+                    duration: 41700
                 },
             ]
         ]

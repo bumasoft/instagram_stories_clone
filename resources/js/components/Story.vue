@@ -1,12 +1,7 @@
 <template>
         <div class="story" :style="storyCSS">
-            <Canvas-video
-                :style="videoCSS"
-                :src="videoSRC"
-                :autoplay="true"
-                :loop="true"
-                :cover="true"
-            ></Canvas-video>
+            <video autoplay muted :style="videoCSS" :src="videoSRC" type="video/mp4"></video>
+
             <div class="timeline">
                 <div class="slice" v-for="(slide, i) in slides" :key="i">
                     <!-- v-progress-bar would cause Vue to re-render on each value update, we're better off using the DOM directly -->
@@ -14,7 +9,16 @@
                 </div>
             </div>
             <div class="slide">
-                <p>{{ slides[currentSlideIndex].title }} <small>8mins ago</small></p>
+                <p>
+                    <v-avatar color="black" :size="32" style="margin-right: 8px;">
+                        <img
+                            src="https://www.upwork.com/profile-portraits/c1omt9esKVIOHWANuPag7klcM6exnA2ouBIQ--8cs_GvpQ3zi_dNRTGGShy1qwpEYE"
+                            alt="John"
+                        >
+                    </v-avatar>
+
+                    {{ slides[currentSlideIndex].title }} <small>9h</small>
+                </p>
 
             </div>
         </div>
@@ -22,23 +26,27 @@
 </template>
 
 <script>
+    import debounce from 'lodash/debounce';
     import anime from 'animejs/lib/anime.es.js';
     import Hammer from 'hammerjs';
     import { store } from '../store';
     import { EventBus } from '../eventbus';
 
-    const SLIDE_DURATION = 2500;
+    const SLIDE_DURATION = 5000;
 
     export default {
         name: 'Story',
         props: {
-            slides: Array
+            slides: Array,
+            index: Number
         },
         data() {
             const timeline = anime.timeline({
                 autoplay: false,
                 duration: SLIDE_DURATION,
-                easing: 'linear'
+                easing: 'linear',
+                videoCheckerTimer: null,
+                currentVideo: null
             });
 
             return {
@@ -66,19 +74,25 @@
                 return bgImage;
             },
             videoCSS() {
-                if(!this.slides[this.currentSlideIndex].backgroundVideo) {
+                if(!this.slides[this.currentSlideIndex].backgroundVideo || store.getters.currentStoryIndex != this.index) {
                     return { display: 'none' };
                 } else {
 
                     return {
                         display: 'block',
                         position: 'absolute',
-                        top: '0',
-                        left: '0',
+                        top: '50%',
+                        left: '50%',
+                        '-webkit-transform': 'translateX(-50%) translateY(-50%)',
+                        transform: 'translateX(-50%) translateY(-50%)',
+                        minWidth: this.viewportWidth + 'px',
+                        minHeight: '100%'
                     }
                 }
             },
             videoSRC() {
+                if(store.getters.currentStoryIndex != this.index) return '';
+
                 const bgVideo = this.slides[this.currentSlideIndex].backgroundVideo ?
                     `userfiles/${this.slides[this.currentSlideIndex].backgroundVideo}` :
                     '';
@@ -92,11 +106,18 @@
             },
             deactivate: function() {
                 this.timeline.pause();
+                if(this.currentVideo) {
+                    this.currentVideo.pause();
+                }
             },
             resetSlide: function() { // Jump to beginning of the slide
                 this.timeline.pause();
                 this.timeline.seek(this.currentSlideIndex * SLIDE_DURATION);
                 this.timeline.play();
+                if(this.currentVideo) {
+                    this.currentVideo.currentTime = 0;
+                    this.currentVideo.play();
+                }
             },
             nextSlide: function() {
                 if (this.currentSlideIndex < this.slides.length - 1) {
@@ -125,10 +146,11 @@
             let $timeline = this.$el.getElementsByClassName('timeline')[0];
 
             // Add progress bars to the timeline animation group
-            this.slides.forEach((color, index) => {
+            this.slides.forEach((item, index) => {
                 this.timeline.add({
                     targets: $timeline.getElementsByClassName('slice')[index].getElementsByClassName('progress'),
                     width: '100%',
+                    duration: item.duration ? item.duration : SLIDE_DURATION,
                     changeBegin: () => {
                         // Update the Vue component state when progress bar begins to play
                         this.currentSlideIndex = index;
@@ -152,15 +174,21 @@
 
             this.hammer.on("press", () => {
                 this.timeline.pause();
+                if(this.currentVideo) {
+                    this.currentVideo.pause();
+                }
             });
 
             this.hammer.on("pressup tap", () => {
                 this.timeline.play();
+                if(this.currentVideo) {
+                    this.currentVideo.play();
+                }
             });
 
             // Tap on the side to navigate between slides
             this.hammer.on("tap", event => {
-                if (event.center.x > window.innerWidth / 3) {
+                if (event.center.x > window.innerWidth / 2) {
                     this.nextSlide();
                 } else {
                     this.previousSlide();
@@ -177,6 +205,32 @@
                     }
                 }
             });
+        },
+        watch: {
+            currentSlideIndex: function (index) {
+                clearInterval(this.videoCheckerTimer);
+
+                if(this.slides[index].backgroundVideo) {
+                    this.timeline.pause();
+
+                    let $vid = this.$el.getElementsByTagName('video')[0];
+
+                    $vid.volume = 1;
+                    $vid.muted = false;
+
+                    this.videoCheckerTimer = setInterval( () => {
+                        let duration = $vid.duration * 1000;
+                        console.log(duration);
+
+                        if(!isNaN(duration)) {
+                            clearInterval(this.videoCheckerTimer);
+                            this.currentVideo = $vid;
+                            this.timeline.play();
+                        }
+                    }, 10 );
+
+                }
+            }
         }
     }
 </script>
@@ -194,20 +248,21 @@
     .timeline {
         z-index: 10000;
         display: flex;
+        padding: 10px;
         flex-grow: 0;
         width: 100%;
     }
 
     .timeline > .slice {
-        background: rgba(0,0,0,0.25);
-        height: 10px;
-        margin: 10px;
+        background: #a0a0a0;
+        height: 3px;
+        margin: 0px 1px;
         width: 100%;
     }
 
     .timeline > .slice > .progress {
-        background: black;
-        height: 10px;
+        background: #f0f0f0;
+        height: 3px;
         width: 0%;
     }
 
@@ -215,17 +270,20 @@
         z-index: 9000;
         /* Take the rest of the page */
         flex-grow: 1;
-        padding: 10px;
+        padding: 0 11px;
     }
 
     .slide p {
-        font-size: 14pt;
-        font-weight: bold;
-        color: black;
+        font-size: 11pt;
+        font-weight: 700;
+        font-family: 'Lato';
+        color: #fff;
     }
 
     .slide p > small {
-        display: block;
-        font-weight: normal;
+        color: #f0f0f0;
+        margin-left: 8px;
+        font-size: 12pt;
+        font-weight: 400;
     }
 </style>
