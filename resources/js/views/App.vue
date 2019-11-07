@@ -45,7 +45,7 @@
                                     </v-btn>
                                 </template>
                             </v-toolbar>
-                            <v-card-text style="height: 536px;" class="grey dark-text lighten-5">
+                            <v-card-text id="main-content" class="grey dark-text lighten-5">
                                 <router-view></router-view>
                             </v-card-text>
                         </v-card>
@@ -65,7 +65,23 @@
     }
 </script>
 <style scoped>
+    html, body {
+        height: 100vh;
+        width: 100vw;
+    }
+
     .dark-text {
         color: #000 !important;
+    }
+
+    #main-content {
+        height: 525px;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .v-card.v-sheet {
+        max-width: 800px;
     }
 </style>

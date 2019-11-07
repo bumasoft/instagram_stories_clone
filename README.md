@@ -1,5 +1,7 @@
 # Instagram Stories Clone
 
+The frontend is an improvement over kayue/vue-story-example, with Vuetify and Vuex on top, and a Laravel backend (in progress).
+
 ## Initial Setup
 
 ### 1. Install Packages and Initialize Laravel

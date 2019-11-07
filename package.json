@@ -13,10 +13,16 @@
     "@mdi/font": "^4.5.95",
     "@vue/cli": "^4.0.5",
     "@vue/cli-service-global": "^4.0.5",
+    "animejs": "^3.1.0",
     "deepmerge": "^4.2.2",
+    "hammerjs": "^2.0.8",
+    "lodash-es": "^4.17.15",
     "material-design-icons-iconfont": "^5.0.1",
+    "vue-canvasvideo": "^1.0.0",
     "vue-router": "^3.1.3",
-    "vuetify": "^2.1.0"
+    "vuetify": "^2.1.0",
+    "vuex": "^3.1.1",
+    "vuex-persistedstate": "^2.7.0"
   },
   "devDependencies": {
     "axios": "^0.19",

@@ -4,13 +4,17 @@
  * building robust, powerful web applications using Vue and Laravel.
  */
 
+
 require('./bootstrap');
 
 import Vue from 'vue'
 import vuetify from './plugins/vuetify'
 import router from './plugins/router'
-import App from './views/App'
+import { store } from './store'
+import CanvasVideo from "./plugins/canvasvideo";
 import '@mdi/font/css/materialdesignicons.css'
+import App from './views/App'
+
 
 /**
  * The following block of code may be used to automatically register your
@@ -34,6 +38,7 @@ import '@mdi/font/css/materialdesignicons.css'
 new Vue({
     el: '#app',
     components: { App },
+    store,
     router,
     vuetify
 });
