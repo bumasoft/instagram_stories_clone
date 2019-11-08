@@ -9,7 +9,7 @@
                     align="center"
                     justify="center"
                 >
-                    <v-col cols="12" sm="12" md="3">
+                    <v-col cols="12" sm="12" md="3" lg="3" xl="2">
                         <v-card>
                             <v-toolbar dense>
                                 <v-app-bar-nav-icon id="app-menu" @click="menuShown = !menuShown"></v-app-bar-nav-icon>
@@ -30,23 +30,10 @@
                                 </v-menu>
                                 <v-toolbar-title>Instagram Stories Clone</v-toolbar-title>
 
-                                <template v-slot:extension>
-                                    <v-btn
-                                        color="pink"
-                                        dark
-                                        small
-                                        absolute
-                                        top
-                                        right
-                                        fab
-                                        router :to="{ name: 'create' }"
-                                    >
-                                        <v-icon>mdi-plus</v-icon>
-                                    </v-btn>
-                                </template>
                             </v-toolbar>
                             <v-card-text id="main-content" class="grey dark-text lighten-5">
                                 <router-view></router-view>
+
                             </v-card-text>
                         </v-card>
                     </v-col>

@@ -10,6 +10,8 @@ The frontend is an improvement over kayue/vue-story-example, with Vuetify and Vu
 composer install
 npm install
 php artisan key:generate
+
+php artisan storage:link
 ```
 
 ### 2. Edit .env

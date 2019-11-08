@@ -1,6 +1,21 @@
 <template>
-    <div id="stories" :style="storiesCSS">
-        <Story :slides="story" v-for="(story, index) in stories" :key="index" :index="index" ref="stories" />
+    <div id="stories-wrapper">
+        <div id="stories" :style="storiesCSS">
+            <Story :storyData="story" v-for="(story, index) in stories" :key="index" :index="index" ref="stories" />
+        </div>
+        <v-btn
+            class="add-story-btn"
+            color="white"
+            light
+            small
+            absolute
+            bottom
+            center
+            fab
+            router :to="{ name: 'create' }"
+        >
+            <v-icon>mdi-camera</v-icon>
+        </v-btn>
     </div>
 </template>
 
@@ -20,10 +35,12 @@
                 viewportWidth: 456,  // this will be calculated on mount
             }
         },
-        created() {
-            store.commit("setCurrentStoryIndex", 0);
+        beforeDestroy() {
+            EventBus.$off('NEXT_STORY');
+            EventBus.$off('PREVIOUS_STORY');
         },
         mounted () {
+            store.commit("setCurrentStoryIndex", 0);
 
             this.setViewport();
             window.onresize = this.setViewport;
@@ -53,14 +70,6 @@
                 }
             });
 
-            // Debounced previous and next
-            const debouncedNext = debounce(() => {
-                EventBus.$emit('NEXT_STORY');
-            }, 100, { leading: true, trailing: false });
-            const debouncedPrevious = debounce(() => {
-                EventBus.$emit('PREVIOUS_STORY');
-            }, 100, { leading: true, trailing: false });
-
             this.$refs.stories[0].activate();
 
         },
@@ -81,10 +90,23 @@
 </script>
 
 <style scoped>
+    #stories-wrapper {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
     #stories {
         transition: margin .3s ease-out;
         height: 100%;
         position: relative;
+    }
+
+    .add-story-btn {
+        background-color: rgba(200, 200, 200, 50) !important;
+        z-index: 20000;
+        position: absolute;
+        left: calc(50% - 24px);
+        margin-bottom: 50px;
     }
 
 </style>

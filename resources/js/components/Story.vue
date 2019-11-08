@@ -1,9 +1,11 @@
 <template>
         <div class="story" :style="storyCSS">
-            <video autoplay muted :style="videoCSS" :src="videoSRC" type="video/mp4"></video>
+            <video preload="yes" autoplay playsinline muted :style="videoCSS" :src="videoSRC">
+                <source :src="videoSRC" type="video/mp4" />
+            </video>
 
             <div class="timeline">
-                <div class="slice" v-for="(slide, i) in slides" :key="i">
+                <div class="slice" v-for="(slide, i) in storyData.slides" :key="i">
                     <!-- v-progress-bar would cause Vue to re-render on each value update, we're better off using the DOM directly -->
                     <div class="progress">&nbsp;</div>
                 </div>
@@ -17,7 +19,7 @@
                         >
                     </v-avatar>
 
-                    {{ slides[currentSlideIndex].title }} <small>9h</small>
+                    {{ storyData.name }} <small>9h</small>
                 </p>
 
             </div>
@@ -37,7 +39,7 @@
     export default {
         name: 'Story',
         props: {
-            slides: Array,
+            storyData: Object,
             index: Number
         },
         data() {
@@ -60,21 +62,21 @@
         computed: {
             storyCSS() {
                 return {
-                    backgroundColor: this.slides[this.currentSlideIndex].backgroundColor,
+                    backgroundColor: this.storyData.slides[this.currentSlideIndex].backgroundColor,
                     backgroundImage: this.storyDataSrc,
                     backgroundSize: 'cover',
                     width: 100/store.getters.stories.length + '%'
                 }
             },
             storyDataSrc() {
-                const bgImage = this.slides[this.currentSlideIndex].backgroundImage ?
-                    `url(userfiles/${this.slides[this.currentSlideIndex].backgroundImage})` :
+                const bgImage = this.storyData.slides[this.currentSlideIndex].backgroundImage ?
+                    `url(storage/userfiles/${this.storyData.slides[this.currentSlideIndex].backgroundImage})` :
                     '';
 
                 return bgImage;
             },
             videoCSS() {
-                if(!this.slides[this.currentSlideIndex].backgroundVideo || store.getters.currentStoryIndex != this.index) {
+                if(!this.storyData.slides[this.currentSlideIndex].backgroundVideo || store.getters.currentStoryIndex != this.index) {
                     return { display: 'none' };
                 } else {
 
@@ -93,8 +95,8 @@
             videoSRC() {
                 if(store.getters.currentStoryIndex != this.index) return '';
 
-                const bgVideo = this.slides[this.currentSlideIndex].backgroundVideo ?
-                    `userfiles/${this.slides[this.currentSlideIndex].backgroundVideo}` :
+                const bgVideo = this.storyData.slides[this.currentSlideIndex].backgroundVideo ?
+                    `storage/userfiles/${this.storyData.slides[this.currentSlideIndex].backgroundVideo}` :
                     '';
 
                 return bgVideo;
@@ -120,7 +122,7 @@
                 }
             },
             nextSlide: function() {
-                if (this.currentSlideIndex < this.slides.length - 1) {
+                if (this.currentSlideIndex < this.storyData.slides.length - 1) {
                     this.currentSlideIndex++;
                     this.resetSlide();
                 } else {
@@ -146,7 +148,7 @@
             let $timeline = this.$el.getElementsByClassName('timeline')[0];
 
             // Add progress bars to the timeline animation group
-            this.slides.forEach((item, index) => {
+            this.storyData.slides.forEach((item, index) => {
                 this.timeline.add({
                     targets: $timeline.getElementsByClassName('slice')[index].getElementsByClassName('progress'),
                     width: '100%',
@@ -157,7 +159,7 @@
                     },
                     complete: () => {
                         // Move to the next story when finished playing all slides
-                        if (index === this.slides.length - 1) {
+                        if (index === this.storyData.slides.length - 1) {
                             this.nextStory();
                         }
                     }
@@ -210,7 +212,7 @@
             currentSlideIndex: function (index) {
                 clearInterval(this.videoCheckerTimer);
 
-                if(this.slides[index].backgroundVideo) {
+                if(this.storyData.slides[index].backgroundVideo) {
                     this.timeline.pause();
 
                     let $vid = this.$el.getElementsByTagName('video')[0];
@@ -226,6 +228,7 @@
                             clearInterval(this.videoCheckerTimer);
                             this.currentVideo = $vid;
                             this.timeline.play();
+
                         }
                     }, 10 );
 
