@@ -3332,7 +3332,17 @@ var SLIDE_DURATION = 5000;
     resetSlide: function resetSlide() {
       // Jump to beginning of the slide
       this.timeline.pause();
-      this.timeline.seek(this.currentSlideIndex * SLIDE_DURATION);
+      var prev_duration = 0;
+
+      for (var i = 0; i < this.currentSlideIndex; i++) {
+        if (this.storyData.slides[i].duration) {
+          prev_duration += this.storyData.slides[i].duration;
+        } else {
+          prev_duration += SLIDE_DURATION;
+        }
+      }
+
+      this.timeline.seek(prev_duration);
       this.timeline.play();
 
       if (this.currentVideo) {

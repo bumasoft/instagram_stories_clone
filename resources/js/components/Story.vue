@@ -114,7 +114,17 @@
             },
             resetSlide: function() { // Jump to beginning of the slide
                 this.timeline.pause();
-                this.timeline.seek(this.currentSlideIndex * SLIDE_DURATION);
+
+                let prev_duration = 0;
+                for(let i=0;i<this.currentSlideIndex;i++) {
+                    if(this.storyData.slides[i].duration) {
+                        prev_duration += this.storyData.slides[i].duration;
+                    } else {
+                        prev_duration += SLIDE_DURATION;
+                    }
+                }
+
+                this.timeline.seek(prev_duration);
                 this.timeline.play();
                 if(this.currentVideo) {
                     this.currentVideo.currentTime = 0;
